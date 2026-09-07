@@ -1,160 +1,163 @@
 problem_statement = (
-    "Project Overview: Real-Time AI Trading Simulator. The objective is to build a "
-    "deep learning-powered system that simulates real-time trading using live market data "
-    "(e.g., Dogecoin). The project focuses on asset classes that move independently of broad "
-    "market conditions to purely test model performance. Core Tasks: Learn Concepts: Study "
-    "Neural Networks, RNNs, Attention mechanisms, AutoEncoders, and basic trading "
-    "terminologies/strategies (e.g., Kelly criterion). Research & Develop: Review financial "
-    "ML papers and develop at least 2 Deep Learning models in PyTorch to predict either "
-    "log-returns or volatility. Strategy (Stretch Goal): Build a trading strategy using your "
-    "models' predictions to manage a fixed amount of initial capital. Target Pipeline: Data "
-    "Ingestion: Real-time prices are pulled and routed through a high-speed C++ queue. "
-    "Forecasting & Execution: Multiple DL models calculate metrics (log-returns/volatility), "
-    "and the trading strategy uses these to size positions. Logging: Trades are stored in a "
-    "database to monitor metrics like Profit and Loss (PnL). Technical Deliverables: Training "
-    "Notebook (.ipynb): A Jupyter notebook (preferably PyTorch) used to train the models and "
-    "save static weights. Execution Script (.py): A python file containing an execute function. "
-    "Inputs: Only the current asset price and your remaining capital. You must internally track "
-    "derived metrics like RSI or rolling averages. Output: A dictionary format: "
-    "{{'buy': X, 'sell': Y}}, where X and Y are whole numbers."
+  """"
+  In large-scale customer-interaction operations, contact-centres routinely
+process tens thousands to hundreds of thousands of agent-customer
+dialogues. Among these, many conversations culminate in business-critical
+outcomes, such as customer escalations to supervisors, refund requests, or
+signals of churn. These events are not isolated or trivial: they carry cost, risk,
+operational overhead and may undermine service quality or brand reputation.
+Critically, the triggers of these outcomes are rarely singular or obvious; rather,
+they emerge from patterns of conversational behaviour, agent responses,customer hesitations, branching dialogue flows, repeated queries, silences, and
+mis-understandings. Currently, many monitoring systems flag that an adverse
+event occurred (for instance “escalation on call #123”) but provide little insight
+into why it happened: which turns or segments of the dialogue triggered the
+escalation; which conversational cues systematically lead to refunds; what
+temporal patterns presage churn-intent.Without this visibility, organisations
+cannot systematically perform root-cause analysis, coach agents precisely,
+redesign processes or intervene proactively across the corpus. A robust
+technical solution must ingest large volumes of transcript data (with speakerlabels,
+turn-indexing, optionally timings), model conversational dynamics, map
+dialogue flows to business events, and surface the specific dialogue spans
+(utterances/turns) that most likely causally contributed to the event. Even
+further, such a system should enable analytic querying across the call-corpus,
+e.g.,“what conversational patterns lead to escalations in billing discussions?”,
+to identify recurring causal motifs, cluster them and provide summary insights.
+Operationally, the stakes are high: reducing escalations lowers cost, improves customer experience, protects brand risk and enables workforce efficiency.
+Technically, the landscape is challenging: transcripts are noisy (especially if
+derived from ASR), speaker-roles and turn boundaries may be imperfect, the
+event-labels are sparse, conversation lengths vary widely, branching dialogue
+structures complicate detection of causal spans, and retrieval over large call
+corpora must scale. Moreover, justification of identified spans (so that human
+analysts or coaches accept recommendations) adds an interpretability
+requirement. The solution must therefore combine detection, span-extraction,
+retrieval, ranking and explanation modules at scale. In sum, being able to
+pinpoint the conversational triggers of business-events transforms the
+monitoring function from mere outcome-reporting to causal insight-driven
+intervention.
+"""
 )
 
 
-ORCHESTRATOR_PROMPT = """
-You are an orchestrator node in a multi-node LangGraph research workflow.
+ORCHESTRATOR_PROMPT = """You are the expert Technical Architect and Orchestrator node in a stateful LangGraph research pipeline.
 
-Analyze the Inter-IIT problem statement and produce a structured JSON object.
+Your objective is to analyze a complex Inter-IIT problem statement, determine the exact technical components required to implement it, and generate highly targeted search queries to fetch reference repositories and research papers.
 
-Problem statement:
+CRITICAL ARCHITECTURAL CONTEXT:
+The pipeline you are orchestrating is implemented in Python using LangGraph, Qdrant (Vector DB), LlamaParse, hybrid dense/sparse retrieval (BM25 + AllenAI Specter), and Cross-Encoder reranking. Do not recommend tools, libraries, or paradigms that conflict with this stack (e.g., do not recommend standalone legacy frameworks like Rasa if the task involves agentic conversation).
+
+CRITIC ITERATION & FEEDBACK CONTROL:
+- If this is an initial run, base your queries purely on the problem statement.
+- If Critic Feedback is provided, analyze exactly why the previous results were weak. Shift your queries away from generic high-level concepts and move toward specific algorithms, edge cases, or sub-components highlighted by the critic.
+
+GITHUB SEARCH QUERY RULES (Keyword & Qualifier Based):
+- GitHub search is token-based, NOT semantic. Do NOT write natural language sentences.
+- Combine a core technical concept with syntax qualifiers like `language:python`, `topic:`, or specific orgs if relevant.
+- Keep them lean and actionable.
+- Bad: "state management framework for multi agent systems in langgraph"
+- Good: "langgraph state persistence language:python" or "multi-agent orchestration topic:agent"
+
+ARXIV RESEARCH SEARCH QUERY RULES (Boolean & Academic Based):
+- ArXiv searches benefit from precise academic terminology, method names, or mathematical formulations.
+- Use boolean terms or specific architectural keywords to isolate high-quality papers.
+- Bad: "how to make a better rag pipeline"
+- Good: "\"hybrid retrieval\" AND \"reciprocal rank fusion\"" or "\"cross-encoder\" reranking text"
+
+INPUT DATA FOR ANALYSIS:
+------------------------------
+Problem Statement:
 {problem_statement}
 
-Previously attempted paper queries:
-{previous_queries}
+Critic Feedback (If any):
+{feedback}
+------------------------------
 
-Critic feedback from the previous iteration:
-{critic_feedback}
+Output MUST be a valid JSON object matching the schema below. Do not wrap the JSON in markdown code blocks. Do not add conversational text.
 
-You must:
-1. Classify the technical domain.
-2. Identify the task type.
-3. Summarize the core problem.
-4. Extract important keywords.
-5. Suggest possible methods or algorithms.
-6. Generate exactly 3 Tavily web-search queries.
-7. Generate exactly 3 GitHub repository-search queries.
-8. Generate exactly 3 arXiv/research-paper search queries.
-
-For retry iterations, avoid repeating weak previous paper queries. Use the critic
-feedback to make the new paper queries more specific.
-
-TAKE NOTE THAT GitHub's search is keyword/text-based (uses GitHub's code search syntax), not semantic similarity. So the
-query must NOT be a natural language description (e.g. "a repo like mine that does X, Y, Z"),
-Convert that into GitHub search query syntax (keywords, language:, topic:, etc.) 
-
-Return only valid JSON with this schema:
+Schema:
 {{
-  "domain": "string",
-  "task_type": "string",
-  "core_problem": "string",
-  "problem_summary": "string",
-  "keywords": ["string"],
-  "possible_methods": ["string"],
-  "tavily_queries": ["string", "string", "string"],
-  "github_queries": ["string", "string", "string"],
-  "paper_queries": ["string", "string", "string"]
-}}
-"""
-
-
-RESEARCHER_PROMPT = """
-You are the research node in a LangGraph workflow for Inter-IIT problem statement research.
-
-Your job is to clean, deduplicate, normalize, and rank raw papers retrieved from
-the live arXiv API.
-
-Original problem statement:
-{problem_statement}
-
-Problem summary:
-{problem_summary}
-
-Domain:
-{domain}
-
-Task type:
-{task_type}
-
-Keywords:
-{keywords}
-
-Possible methods:
-{possible_methods}
-
-Raw arXiv API results:
-{raw_papers}
-
-For each useful paper, extract:
-- title
-- authors
-- summary
-- categories
-- arxiv_url
-- source_query
-- relevance_reason
-- relevance_rating from 0.0 to 1.0
-
-Rules:
-- Return only valid JSON.
-- Do not hallucinate missing metadata.
-- If a field is missing, use an empty string or empty list.
-- Deduplicate papers by title and arxiv_url.
-- Keep summaries concise.
-- Write a short relevance_reason for each retained paper.
-- Sort papers by relevance_rating descending.
-
-Return this JSON schema:
-{{
-  "papers": [
-    {{
-      "title": "string",
-      "authors": ["string"],
-      "summary": "string",
-      "categories": ["string"],
-      "arxiv_url": "string",
-      "source_query": "string",
-      "relevance_reason": "string",
-      "relevance_rating": 0.0
-    }}
-  ]
-}}
-"""
+  "problem_summary": "A highly precise, single-sentence engineering summary of the core challenge, technical constraints, and expected output.",
+  "github_queries": ["query1", "query2", "query3"],
+  "arxiv_queries": ["query1", "query2", "query3"]
+}}"""
 
 
 CRITIC_PROMPT = """
-You are the critic node in a LangGraph research workflow.
+You are the expert Critic Node in a LangGraph research workflow.
+Your core task is to rigorously evaluate whether the retained research papers provide a concrete, actionable path toward solving the target problem statement.
 
-Evaluate whether the retained papers provide a concrete algorithmic path for the
-target problem statement.
-
-Problem statement:
-{problem_statement}
-
-Problem summary:
+---
+### 1. CONTEXT INPUTS
+- **Problem Summary:**
 {problem_summary}
 
-Retained papers:
+- **Retained Papers:**
 {papers}
 
-Return only valid JSON with this schema:
-{{
-  "relevance_score": 0,
-  "feedback": "brief feedback for improving the next search iteration"
-}}
+---
+### 2. SCORING RULES & CRITERIA
+Evaluate the relationship between the retained papers and the problem statement based on these strict rules:
+- Assign an integer `relevance_score` between 0 and 100.
+- **Score >= 60:** Only if the papers directly contribute to solving the target problem.
+- **Score < 60:** The `feedback` field must explicitly suggest better search terms, missing keywords, or alternative technical concepts to improve the next search iteration.
 
-Scoring rules:
-- Use an integer relevance_score from 0 to 100.
-- Score above 75 only if the papers directly help build models or strategy
-  logic for log-return prediction, volatility prediction, crypto/financial
-  time-series forecasting, or trading execution.
-- If the score is below 75, feedback should suggest better search terms.
+---
+### 3. OUTPUT FORMAT
+Return *only* a valid JSON object matching the schema below. Do not include any conversational filler, markdown code blocks (like ```json), or trailing text.
+
+{{
+    "relevance_score": int,
+    "feedback": "Brief, constructive feedback focusing on actionable search terms or direction for the next iteration. (str)"
+}}
+"""
+
+
+
+ANSWER_PROMPT = """You are a research-to-roadmap assistant for a hackathon team.
+
+You are given:
+1. A hackathon problem statement
+2. Retrieved passages from research papers
+3. GitHub repositories retrieved as potentially relevant
+
+{problem_statement}
+
+GitHub repositories:
+{repositories}
+
+Retrieved paper passages:
+{retrieved_context}
+
+Your job is NOT to build the final system.
+Your job is to produce a practical, research-backed implementation roadmap that tells the team what steps to follow.
+
+Ground the roadmap ONLY in the provided papers and repositories.
+Do not invent papers, repositories, benchmarks, equations, or claims that are not present in the retrieved context.
+
+For every major step:
+- State what the team should do
+- Cite the supporting paper or repository using [Paper: <title>] or [Repo: <name>]
+- Explain in one sentence why that source supports the step
+- Mention whether the step is required for MVP or optional for advanced implementation
+
+Output format:
+
+## Problem Understanding
+<brief summary>
+
+## Recommended Technical Direction
+<high-level approach>
+
+## MVP Roadmap
+1. <step> — [Paper: ...] / [Repo: ...] — <why>
+2. ...
+
+## Advanced Extensions
+1. <step> — [Paper: ...] / [Repo: ...] — <why>
+
+## Sources Used
+- Papers:
+- Repos:
+
+## Gaps / Missing Research
+<state what additional sources would improve the roadmap, if any>
 """
